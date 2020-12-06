@@ -11,9 +11,7 @@ def sum_questions1(input):
 def sum_questions2(input):
     groups = [group for group in input.split('\n\n')]
     group_answers = [set(a) for a in [l.split('\n') for l in groups]]
-    print(group_answers)
     group_unanimous  = [reduce(lambda x, y : set(x).intersection(set(y)), ga) for ga in group_answers]
-    # print(group_unanimous)
     return reduce(add, [len(gu) for gu in group_unanimous])
 
 SAMPLE ='''abc
