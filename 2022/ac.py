@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 from abc import ABC, abstractmethod
 import argparse
+import copy
+from enum import Enum
 import heapq
 from operator import itemgetter
-from typing import Tuple
+import re
+from typing import Generic, Tuple, TypeVar
+
+T = TypeVar('T')
 
 '''Base class for each day's implementation.
 
@@ -13,12 +18,12 @@ Fill `EXPECTED` with the day's example outputs, i.e. `(1, 42)`.
 
 `_run_impl()` must be implemented for each day, and return the results for parts
 1 and 2 in slots 0 and 1 of the returned tuple.'''
-class Day(ABC):
+class Day(ABC, Generic[T]):
     PREFIX: str
-    EXPECTED: Tuple[int, int]
+    EXPECTED: Tuple[T, T]
 
     @abstractmethod
-    def _run_impl(self, infile: str) -> Tuple[int, int]:
+    def _run_impl(self, infile: str) -> Tuple[T, T]:
         raise Exception
 
     def test(self) -> None:
@@ -47,7 +52,7 @@ def main() -> None:
     else:
         raise Exception('Day {} not implemented'.format(day + 1))
 
-class Day1(Day):
+class Day1(Day[int]):
     PREFIX = 'day1'
     EXPECTED = (24000, 45000)
 
@@ -86,7 +91,7 @@ class Day1(Day):
         r2 = self.part2(h)
         return (r1, r2)
 
-class Day2(Day):
+class Day2(Day[int]):
     PREFIX = 'day2'
     EXPECTED = (15, 12)
 
@@ -130,7 +135,7 @@ class Day2(Day):
 
         return (pts1, pts2)
 
-class Day3(Day):
+class Day3(Day[int]):
     PREFIX = 'day3'
     EXPECTED = (157, 70)
 
@@ -176,7 +181,7 @@ class Day3(Day):
 
             return (dupe_vals, badge_vals)
 
-class Day4(Day):
+class Day4(Day[int]):
     PREFIX = 'day4'
     EXPECTED = (2, 4)
 
@@ -209,7 +214,87 @@ class Day4(Day):
 
         return (subsumed, overlapping)
 
-class DayTemplate(Day):
+class Day5(Day[str]):
+    PREFIX = 'day5'
+    EXPECTED = ('CMZ', 'MCD')
+
+    STACKS: list[list[str]] = []
+    DEEP_STACKS: list[list[str]] = []
+
+    INSTRUCTION_RE = re.compile(r'move (\d+) from (\d+) to (\d+)')
+
+    class Mode(Enum):
+        READ_STACKS = 0,
+        FIND_INSTRUCTIONS = 1,
+        READ_INSTRUCTIONS = 2,
+
+    def _run_impl(self, infile: str) -> Tuple[str, str]:
+        with open(infile, 'r') as f:
+            mode = Day5.Mode.READ_STACKS
+
+            # Don't strip b/c whitespace is meaningful
+            while l := f.readline():
+                if mode is Day5.Mode.READ_STACKS:
+                    stack_idx = 0
+
+                    while len(l) >= 3:
+                        col = l[0:4]
+                        l = l[4:]
+
+                        # Make sure to include '\n' since we couldn't strip() earlier
+                        val = col.strip(' []\n')
+
+                        # Whwn we've seen a digit we're done reading in the stacks
+                        if val.isdigit():
+                            for i in range(0, len(self.STACKS)):
+                                self.STACKS[i].reverse()
+
+                            self.DEEP_STACKS = copy.deepcopy(self.STACKS)
+                            mode = Day5.Mode.FIND_INSTRUCTIONS
+                            break
+
+                        if len(self.STACKS) == stack_idx:
+                            self.STACKS.append([])
+
+                        if len(val) > 0:
+                            assert len(val) == 1
+                            self.STACKS[stack_idx].append(val)
+
+                        stack_idx += 1
+
+                elif mode is Day5.Mode.FIND_INSTRUCTIONS:
+                    if len(l.strip()) == 0:
+                        mode = Day5.Mode.READ_INSTRUCTIONS
+                else:
+                    m = self.INSTRUCTION_RE.match(l)
+                    assert len(m.groups()) == 3
+                    count = int(m.group(1))
+                    fr = int(m.group(2)) - 1
+                    to = int(m.group(3)) - 1
+
+                    # part 1, move one at a time
+                    for i in range(0, count):
+                        val = self.STACKS[fr].pop()
+                        self.STACKS[to].append(val)
+
+                    # part 2, move multiple at once
+                    l = len(self.DEEP_STACKS[fr])
+                    val = self.DEEP_STACKS[fr][l - count:]
+                    self.DEEP_STACKS[fr] = self.DEEP_STACKS[fr][:l - count]
+                    self.DEEP_STACKS[to] = self.DEEP_STACKS[to] + val
+
+            r1 = ''
+            r2 = ''
+
+            for stack in self.STACKS:
+                r1 = r1 + stack[-1]
+
+            for stack in self.DEEP_STACKS:
+                r2 = r2 + stack[-1]
+
+        return (r1, r2)
+
+class DayTemplate(Day[int]):
     PREFIX = ''
     EXPECTED = (-1, -1)
 
@@ -221,4 +306,5 @@ if __name__ == '__main__':
     DAYS[1] = Day2()
     DAYS[2] = Day3()
     DAYS[3] = Day4()
+    DAYS[4] = Day5()
     main()
