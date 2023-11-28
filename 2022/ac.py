@@ -6,7 +6,7 @@ from enum import Enum
 import heapq
 from operator import itemgetter
 import re
-from typing import Generic, Tuple, TypeVar
+from typing import Generic, Optional, Tuple, TypeVar, Union
 
 T = TypeVar('T')
 
@@ -267,7 +267,7 @@ class Day5(Day[str]):
                         mode = Day5.Mode.READ_INSTRUCTIONS
                 else:
                     m = self.INSTRUCTION_RE.match(l)
-                    assert len(m.groups()) == 3
+                    assert m and len(m.groups()) == 3
                     count = int(m.group(1))
                     fr = int(m.group(2)) - 1
                     to = int(m.group(3)) - 1
@@ -278,10 +278,10 @@ class Day5(Day[str]):
                         self.STACKS[to].append(val)
 
                     # part 2, move multiple at once
-                    l = len(self.DEEP_STACKS[fr])
-                    val = self.DEEP_STACKS[fr][l - count:]
-                    self.DEEP_STACKS[fr] = self.DEEP_STACKS[fr][:l - count]
-                    self.DEEP_STACKS[to] = self.DEEP_STACKS[to] + val
+                    i = len(self.DEEP_STACKS[fr])
+                    moving = self.DEEP_STACKS[fr][i - count:]
+                    self.DEEP_STACKS[fr] = self.DEEP_STACKS[fr][:i - count]
+                    self.DEEP_STACKS[to] = self.DEEP_STACKS[to] + moving
 
             r1 = ''
             r2 = ''
@@ -293,6 +293,123 @@ class Day5(Day[str]):
                 r2 = r2 + stack[-1]
 
         return (r1, r2)
+
+class Day6(Day[int]):
+    PREFIX = 'day6'
+    EXPECTED = (7, 19)
+
+    def _run_impl(self, infile: str) -> Tuple[int, int]:
+        marker = -1
+        msg = -1
+
+        with open(infile, 'r') as f:
+            l = f.readline().strip()
+
+            for i in range(0, len(l) - 4):
+                chars = set(l[i:i+4])
+
+                if marker == -1 and len(chars) == 4:
+                    # marker index is i + 4
+                    marker = i + 4
+
+                chars = set(l[i:i+14])
+
+                if msg == -1 and len(chars) == 14:
+                    msg = i + 14
+
+                if marker >= 0 and msg >= 0:
+                    break
+
+        return (marker, msg)
+
+class Day7(Day[int]):
+    PREFIX = 'day7'
+    EXPECTED = (95437, -1)
+
+    class Dir():
+        name: str
+        parent: Optional['Day7.Dir']
+        children: list[Union['Day7.Dir', 'Day7.File']]
+        _size: Optional[int]
+
+        def __init__(self, parent: Optional['Day7.Dir'], name: str):
+            self.children = []
+            self.parent = parent
+            if self.parent is not None:
+                self.parent.add_child(self)
+            self.name = name
+
+        def size(self) -> int:
+            # memoize to avoid recomputing; assumes child sizes don't change
+            if self._size is None:
+                self._size = sum([c.size() for c in self.children])
+
+            return self._size
+
+        def add_child(self, child: Union['Day7.Dir', 'Day7.File']):
+            self.children.append(child)
+
+        def find_subdir(self, name: str) -> 'Day7.Dir':
+            for c in self.children:
+                if c.name == name:
+                    assert isinstance(c, Day7.Dir)
+                    return c
+
+            raise Exception
+
+    class File():
+        name: str
+        parent: 'Day7.Dir'
+        _size: int
+
+        def __init__(self, parent: 'Day7.Dir', name: str, size: int):
+            self.name = name
+            self.parent = parent
+            self.parent.add_child(self)
+            self._size = size
+
+        def size(self) -> int:
+            return self._size
+
+    def _run_impl(self, infile: str) -> Tuple[int, int]:
+        with open(infile, 'r') as f:
+            root_dir = Day7.Dir(None, '/')
+            current_dir = root_dir
+
+            while l := f.readline().strip():
+                if l.startswith('$'):
+                    # navigation command; strip first two characters
+                    l = l[2:]
+
+                    if l.startswith('cd'):
+                        # strip 'cd '; l is now the target
+                        l = l[3:]
+
+                        if l == '..':
+                            assert current_dir.parent is not None
+                            current_dir = current_dir.parent
+                        elif l == '/':
+                            current_dir = root_dir
+                        else:
+                            current_dir = current_dir.find_subdir(l)
+                    else:
+                        # ls, move on to reading contents
+                        pass
+                else:
+                    # content specification for current directory
+                    if l.startswith('dir'):
+                        dir = Day7.Dir(current_dir, l[4:])
+                    else:
+                        (ss, name) = l.split()
+                        file = Day7.File(current_dir, name, int(ss))
+
+            sizes = []
+            current_dir = root_dir
+            visited = set()
+
+
+
+        return (0, -1)
 
 class DayTemplate(Day[int]):
     PREFIX = ''
@@ -307,4 +424,6 @@ if __name__ == '__main__':
     DAYS[2] = Day3()
     DAYS[3] = Day4()
     DAYS[4] = Day5()
+    DAYS[5] = Day6()
+    DAYS[6] = Day7()
     main()
