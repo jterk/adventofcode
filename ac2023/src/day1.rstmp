@@ -1,0 +1,14 @@
+use std::fs;
+use toml::Table;
+
+fn main() {
+    let inputs = fs::read_to_string("input.toml")
+        .expect("Failed to read input")
+        .parse::<Table>()
+        .expect("Failed to parse input");
+
+
+    println!("{}", inputs["part1"]);
+}
+
+fn part1(input: String) {}
