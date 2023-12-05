@@ -1,4 +1,5 @@
 use std::char;
+use std::cmp;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::format;
@@ -154,12 +155,12 @@ impl Cubes {
 
 fn day2(part: Part) -> fn(&str) -> u32 {
     match part {
-        Part::One => day2_impl,
-        Part::Two => day2_impl,
+        Part::One => sum_valid_game_ids,
+        Part::Two => sum_min_cube_powers,
     }
 }
 
-fn day2_impl(s: &str) -> u32 {
+fn sum_valid_game_ids(s: &str) -> u32 {
     let cubes = Cubes {
         blue_count: 14,
         green_count: 13,
@@ -175,6 +176,24 @@ fn day2_impl(s: &str) -> u32 {
                 .expect("Not a number?")
         })
         .sum()
+}
+
+fn sum_min_cube_powers(s: &str) -> u32 {
+    s.lines().map(get_cubes).map(|cs| {
+        let mut pc = Cubes {
+            blue_count: 0,
+            green_count: 0,
+            red_count: 0,
+        };
+
+        for c in cs {
+            pc.blue_count = cmp::max(pc.blue_count, c.blue_count);
+            pc.green_count = cmp::max(pc.green_count, c.green_count);
+            pc.red_count = cmp::max(pc.red_count, c.red_count);
+        }
+
+        pc.blue_count * pc.green_count * pc.red_count
+    }).sum()
 }
 
 fn is_possible(game: &str, cubes: Cubes) -> bool {
