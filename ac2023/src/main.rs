@@ -1,54 +1,84 @@
 use std::char;
+use std::collections::BTreeMap;
+use std::collections::HashMap;
+use std::format;
 use std::fs;
 use toml::Table;
 
-fn main() {
-    let inputs = fs::read_to_string("inputs.toml")
-        .expect("Failed to read day1.toml")
-        .parse::<Table>()
-        .expect("Failed to parse day1.toml");
+/*
+TODOs:
 
-    // TODO parse TOML into a struct
-    let sample_out = part1(
-        inputs["day1"].as_table().expect("day1 isn't a table")["part1"]
-            .as_table()
-            .expect("missing part1 for day1")["sample"]
-            .as_str()
-            .expect("missing day1.part1 sample")
-            .to_string(),
-    );
-    let out = part1(
-        inputs["day1"].as_table().expect("day1 isn't a table")["input"]
-            .as_str()
-            .expect("missing day1.input")
-            .to_string(),
-    );
+ * Parse inputs.toml into struct(s)
+ * Run sample as test and compare to expected
+ * Eliminate input parsing/day running boilerplate
+ * Consider separate inputs for each day
 
-    println!("Part1 sample: {}", sample_out);
-    println!("Part1: {}", out);
+Inputs is
 
-    let sample_out = part2(
-        inputs["day1"].as_table().expect("day1 isn't a table")["part2"]
-            .as_table()
-            .expect("missing part2 for day1")["sample"]
-            .as_str()
-            .expect("missing day1.part2 sample")
-            .to_string(),
-    );
-    let out = part2(
-        inputs["day1"].as_table().expect("day1 isn't a table")["input"]
-            .as_str()
-            .expect("missing day1.input")
-            .to_string(),
-    );
+- day:
+  - input: <str>
+  - part1:
+    - sample: <str>
+    - result: <u32>
+  - part2:
+    - sample: <str>
+    - result: <u32>
 
-    println!("Part2 sample: {}", sample_out);
-    println!("Part2: {}", out);
+Map over keys in Table, pull impl fn. from a Map, bob's you're uncle
+*/
+
+enum Part {
+    One,
+    Two,
 }
 
-fn day1(input: String, extract_fn: fn(&str) -> Vec<u32>) -> u32 {
+type DayFn = fn(Part) -> fn(&str) -> u32;
+
+const DAY1_P: DayFn = day1;
+const DAY2_P: DayFn = day2;
+
+fn main() {
+    let days: BTreeMap<String, DayFn> =
+        BTreeMap::from([("day1".to_string(), DAY1_P), ("day2".to_string(), DAY2_P)]);
+    let inputs = fs::read_to_string("inputs.toml")
+        .expect("Failed to read inputs.toml")
+        .parse::<Table>()
+        .expect("Failed to parse inputs.toml");
+
+    days.iter().for_each(|(day, day_f)| {
+        println!("Running {}", day);
+        let day_inputs = inputs[day]
+            .as_table()
+            .expect(format!("{} is not a table", day).as_str());
+        let input = day_inputs["input"].as_str().expect("missing input");
+        let part1_sample = day_inputs["part1"].as_table().expect("missing part1")["sample"]
+            .as_str()
+            .expect("missing sample");
+        let part2_sample = day_inputs["part2"].as_table().expect("missing part2")["sample"]
+            .as_str()
+            .expect("missing sample");
+
+        println!("Part1 Sample {}", day_f(Part::One)(part1_sample));
+        println!("Part1 {}", day_f(Part::One)(input));
+        println!("Part2 Sample {}", day_f(Part::Two)(part2_sample));
+        println!("Part1 {}", day_f(Part::Two)(input));
+        println!();
+    });
+}
+
+//////////////////////
+// DAY 1
+//////////////////////
+
+fn day1(part: Part) -> fn(&str) -> u32 {
+    match part {
+        Part::One => |s| day1_impl(s, extract_numbers),
+        Part::Two => |s| day1_impl(s, extract_numbers2),
+    }
+}
+
+fn day1_impl(input: &str, extract_fn: fn(&str) -> Vec<u32>) -> u32 {
     input
-        .as_str()
         .lines()
         .map(extract_fn)
         .map(|v: Vec<u32>| match v.len() {
@@ -58,21 +88,14 @@ fn day1(input: String, extract_fn: fn(&str) -> Vec<u32>) -> u32 {
         .sum()
 }
 
-fn part1(input: String) -> u32 {
-    day1(input, extract_numbers)
-}
-
-fn part2(input: String) -> u32 {
-    day1(input, extract_numbers2)
-}
-
 fn extract_numbers(s: &str) -> Vec<u32> {
     s.matches(char::is_numeric)
-        .map(|s| s.parse::<u32>().unwrap())
+        .map(|s| s.parse::<u32>().expect("Failed to parse char"))
         .collect()
 }
 
 fn extract_numbers2(s: &str) -> Vec<u32> {
+    // Could do this by iterating on indices instead of mutating a slice
     let mut ssc = s.to_string();
     let mut sc = ssc.as_mut_str();
     let mut numbers = vec![];
@@ -108,4 +131,79 @@ fn extract_numbers2(s: &str) -> Vec<u32> {
     }
 
     numbers
+}
+
+//////////////////////
+// DAY 2
+//////////////////////
+
+#[derive(Clone, Copy, Debug)]
+struct Cubes {
+    blue_count: u32,
+    green_count: u32,
+    red_count: u32,
+}
+
+impl Cubes {
+    fn fits_within(&self, other: &Self) -> bool {
+        self.blue_count <= other.blue_count
+            && self.green_count <= other.green_count
+            && self.red_count <= other.red_count
+    }
+}
+
+fn day2(part: Part) -> fn(&str) -> u32 {
+    match part {
+        Part::One => day2_impl,
+        Part::Two => day2_impl,
+    }
+}
+
+fn day2_impl(s: &str) -> u32 {
+    let cubes = Cubes {
+        blue_count: 14,
+        green_count: 13,
+        red_count: 12,
+    };
+
+    s.lines()
+        .filter(|l| is_possible(*l, cubes))
+        .map(|l| {
+            l.get((l.find(" ").expect("Missing space") + 1)..l.find(":").expect("Missing colon"))
+                .expect("No match?")
+                .parse::<u32>()
+                .expect("Not a number?")
+        })
+        .sum()
+}
+
+fn is_possible(game: &str, cubes: Cubes) -> bool {
+    get_cubes(game).iter().all(|c| c.fits_within(&cubes))
+}
+
+fn get_cubes(game: &str) -> Vec<Cubes> {
+    game.rsplit(":")
+        .next()
+        .expect("split on ':' failed")
+        .split(";")
+        .map(|s| {
+            let cubes: HashMap<&str, u32> = s
+                .split(",")
+                .map(|s| {
+                    let (count, color) = s
+                        .trim()
+                        .split_once(" ")
+                        .expect("malformed count/color pair");
+                    let cnt = count.trim().parse::<u32>().expect("malformed count");
+                    (color.trim(), cnt)
+                })
+                .collect();
+
+            Cubes {
+                blue_count: *cubes.get("blue").unwrap_or(&0u32),
+                green_count: *cubes.get("green").unwrap_or(&0u32),
+                red_count: *cubes.get("red").unwrap_or(&0u32),
+            }
+        })
+        .collect()
 }
