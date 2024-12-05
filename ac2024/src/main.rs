@@ -1,6 +1,7 @@
 use std::{collections::HashMap, env, fs::{self, File}, io::{BufRead, BufReader}};
 
 mod day_1;
+mod day_2;
 
 trait Day {
     fn part_1(&self) -> Result<i64, String>;
@@ -30,6 +31,7 @@ fn load_dot_env() -> Result<HashMap<String, String>, String> {
 fn get_day(day: u8, buf: BufReader<File>) -> Result<Box<dyn Day>, String> {
     match day {
         1 => Ok(Box::new(day_1::new(buf))),
+        2 => Ok(Box::new(day_2::new(buf))),
         _ => Err(format!("Unknown day {}", day))
     }
 }
