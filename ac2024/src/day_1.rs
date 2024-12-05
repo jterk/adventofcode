@@ -1,4 +1,8 @@
-use std::{collections::HashMap, io::{BufRead, BufReader, Read}, iter::zip};
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, Read},
+    iter::zip,
+};
 
 use crate::Day;
 
@@ -29,17 +33,22 @@ pub fn new<R: Read>(buf: BufReader<R>) -> Day1 {
 impl Day for Day1 {
     fn part_1(&self) -> Result<i64, String> {
         Ok(zip(self.left.clone(), self.right.clone())
-           .map(|(l, r)| (l - r).abs())
-           .reduce(|sum, d| sum + d)
-           .unwrap())
+            .map(|(l, r)| (l - r).abs())
+            .reduce(|sum, d| sum + d)
+            .unwrap())
     }
 
     fn part_2(&self) -> Result<i64, String> {
         let mut counts: HashMap<i64, i64> = HashMap::new();
         // Build map from value to count in right list
-        self.right.iter().for_each(|i| *counts.entry(*i).or_insert(0) += 1);
+        self.right
+            .iter()
+            .for_each(|i| *counts.entry(*i).or_insert(0) += 1);
         // Sum number * count for each entry in the left list
-        Ok(self.left.iter().map(|i| *i * *(counts.entry(*i).or_default()))
+        Ok(self
+            .left
+            .iter()
+            .map(|i| *i * *(counts.entry(*i).or_default()))
             .reduce(|sum, s| sum + s)
             .unwrap())
     }

@@ -1,4 +1,7 @@
-use std::{cmp::max, io::{BufRead, BufReader, Read}};
+use std::{
+    cmp::max,
+    io::{BufRead, BufReader, Read},
+};
 
 use crate::Day;
 
@@ -63,16 +66,22 @@ fn is_safe_inner(report: &Vec<i64>, dampen: bool) -> bool {
         }
     }
 
-    return true
+    return true;
 }
 
 impl Day for Day2 {
     fn part_1(&self) -> Result<i64, String> {
-        Ok(self.reports.iter().fold(0, |count, s| if is_safe(s, false) { count + 1 } else { count }))
+        Ok(self.reports.iter().fold(
+            0,
+            |count, s| if is_safe(s, false) { count + 1 } else { count },
+        ))
     }
 
     fn part_2(&self) -> Result<i64, String> {
-        Ok(self.reports.iter().fold(0, |count, s| if is_safe(s, true) { count + 1 } else { count }))
+        Ok(self.reports.iter().fold(
+            0,
+            |count, s| if is_safe(s, true) { count + 1 } else { count },
+        ))
     }
 }
 
@@ -114,4 +123,3 @@ mod tests {
         assert_eq!(r.part_2(), Ok(14));
     }
 }
-
