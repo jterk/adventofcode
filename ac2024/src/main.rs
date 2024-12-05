@@ -80,9 +80,7 @@ fn main() -> Result<(), String> {
 
     println!("Computing results for day {}...", day_arg);
 
-    let mut results = Vec::new();
-    results.push(day.part_1());
-    results.push(day.part_2());
+    let results = vec![day.part_1(), day.part_2()];
 
     results.iter().enumerate().for_each(|(i, r)| match r {
         Err(e) => println!("Part {} failed: {}", i + 1, e),

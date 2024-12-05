@@ -1,5 +1,5 @@
 use std::{
-    cmp::max,
+    cmp::{max, Ordering},
     io::{BufRead, BufReader, Read},
 };
 
@@ -23,21 +23,19 @@ enum Order {
 }
 
 fn to_order(l: i64, r: i64) -> Order {
-    if l < r {
-        Order::Asc
-    } else if r < l {
-        Order::Desc
-    } else {
-        Order::Unknown
+    match l.cmp(&r) {
+        Ordering::Greater => Order::Desc,
+        Ordering::Less => Order::Asc,
+        Ordering::Equal => Order::Unknown,
     }
 }
 
 fn is_safe(line: &str, dampen: bool) -> bool {
-    let report: Vec<i64> = line.split(" ").map(|s| s.parse().unwrap()).collect();
+    let report: Vec<i64> = line.split(' ').map(|s| s.parse().unwrap()).collect();
     is_safe_inner(&report, dampen)
 }
 
-fn is_safe_inner(report: &Vec<i64>, dampen: bool) -> bool {
+fn is_safe_inner(report: &[i64], dampen: bool) -> bool {
     let mut order = Order::Unknown;
 
     for (i, val) in report.iter().enumerate() {
@@ -47,13 +45,13 @@ fn is_safe_inner(report: &Vec<i64>, dampen: bool) -> bool {
             let delta = (report[i - 1] - val).abs();
             let new_order = to_order(report[i - 1], *val);
 
-            if delta < 1 || delta > 3 || order != new_order {
+            if !(1..=3).contains(&delta) || order != new_order {
                 if dampen {
                     let mut candidates = Vec::new();
                     let idx = i as i64;
 
                     for r in max(0, idx - 2)..idx + 1 {
-                        let mut candidate = report.clone();
+                        let mut candidate = report.to_owned();
                         candidate.remove(r as usize);
                         candidates.push(candidate);
                     }
@@ -66,7 +64,7 @@ fn is_safe_inner(report: &Vec<i64>, dampen: bool) -> bool {
         }
     }
 
-    return true;
+    true
 }
 
 impl Day for Day2 {
