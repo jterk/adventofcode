@@ -7,6 +7,7 @@ use std::{
 
 mod day_1;
 mod day_2;
+mod day_3;
 
 trait Day {
     fn part_1(&self) -> Result<i64, String>;
@@ -37,6 +38,7 @@ fn get_day(day: u8, buf: BufReader<File>) -> Result<Box<dyn Day>, String> {
     match day {
         1 => Ok(Box::new(day_1::new(buf))),
         2 => Ok(Box::new(day_2::new(buf))),
+        3 => Ok(Box::new(day_3::new(buf))),
         _ => Err(format!("Unknown day {}", day)),
     }
 }
