@@ -1,3 +1,5 @@
+use anyhow::{anyhow, Result};
+
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read},
@@ -11,46 +13,59 @@ pub struct Day1 {
     right: Vec<i64>,
 }
 
-pub fn new<R: Read>(buf: BufReader<R>) -> Day1 {
+pub fn new<R: Read>(buf: BufReader<R>) -> Result<Day1> {
     let mut d = Day1 {
         left: Vec::new(),
         right: Vec::new(),
     };
 
     for line in buf.lines() {
-        let l = line.unwrap();
-        let parts = l.split_once("   ").unwrap();
-        d.left.push(parts.0.parse().unwrap());
-        d.right.push(parts.1.parse().unwrap());
+        let l = line?;
+        let parts = l.split_once("   ");
+        match parts {
+            Some((l, r)) => {
+                d.left.push(l.parse()?);
+                d.right.push(r.parse()?);
+            }
+            _ => return Err(anyhow!("No parts found")),
+        }
     }
 
     d.left.sort();
     d.right.sort();
 
-    d
+    Ok(d)
 }
 
 impl Day for Day1 {
-    fn part_1(&self) -> Result<i64, String> {
-        Ok(zip(self.left.clone(), self.right.clone())
+    fn part_1(&self) -> Result<i64> {
+        let r = zip(self.left.clone(), self.right.clone())
             .map(|(l, r)| (l - r).abs())
-            .reduce(|sum, d| sum + d)
-            .unwrap())
+            .reduce(|sum, d| sum + d);
+
+        match r {
+            Some(r) => Ok(r),
+            None => Err(anyhow!("no result")),
+        }
     }
 
-    fn part_2(&self) -> Result<i64, String> {
+    fn part_2(&self) -> Result<i64> {
         let mut counts: HashMap<i64, i64> = HashMap::new();
         // Build map from value to count in right list
         self.right
             .iter()
             .for_each(|i| *counts.entry(*i).or_insert(0) += 1);
         // Sum number * count for each entry in the left list
-        Ok(self
+        let r = self
             .left
             .iter()
             .map(|i| *i * *(counts.entry(*i).or_default()))
-            .reduce(|sum, s| sum + s)
-            .unwrap())
+            .reduce(|sum, s| sum + s);
+
+        match r {
+            Some(r) => Ok(r),
+            None => Err(anyhow!("no result")),
+        }
     }
 }
 
@@ -65,20 +80,22 @@ mod tests {
 3   9
 3   3";
 
-    fn setup() -> Day1 {
+    fn setup() -> Result<Day1> {
         let r = BufReader::new(TEST_INPUT.as_bytes());
         new(r)
     }
 
     #[test]
-    fn test_part_1() {
-        let r = setup();
-        assert_eq!(r.part_1(), Ok(11));
+    fn test_part_1() -> Result<()> {
+        let r = setup()?;
+        assert_eq!(r.part_1()?, 11);
+        Ok(())
     }
 
     #[test]
-    fn test_part_2() {
-        let r = setup();
-        assert_eq!(r.part_2(), Ok(31));
+    fn test_part_2() -> Result<()> {
+        let r = setup()?;
+        assert_eq!(r.part_2()?, 31);
+        Ok(())
     }
 }

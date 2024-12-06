@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use std::{
     cmp::{max, Ordering},
     io::{BufRead, BufReader, Read},
@@ -9,10 +11,10 @@ pub struct Day2 {
     reports: Vec<String>,
 }
 
-pub fn new<R: Read>(buf: BufReader<R>) -> Day2 {
-    Day2 {
-        reports: buf.lines().map(|lr| lr.unwrap()).collect(),
-    }
+pub fn new<R: Read>(buf: BufReader<R>) -> Result<Day2> {
+    Ok(Day2 {
+        reports: buf.lines().map(|lr| lr.unwrap_or("".to_string())).collect(),
+    })
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -68,14 +70,14 @@ fn is_safe_inner(report: &[i64], dampen: bool) -> bool {
 }
 
 impl Day for Day2 {
-    fn part_1(&self) -> Result<i64, String> {
+    fn part_1(&self) -> Result<i64> {
         Ok(self.reports.iter().fold(
             0,
             |count, s| if is_safe(s, false) { count + 1 } else { count },
         ))
     }
 
-    fn part_2(&self) -> Result<i64, String> {
+    fn part_2(&self) -> Result<i64> {
         Ok(self.reports.iter().fold(
             0,
             |count, s| if is_safe(s, true) { count + 1 } else { count },
@@ -104,20 +106,22 @@ mod tests {
 1 2 3 4 3
 9 8 7 6 7";
 
-    fn setup() -> Day2 {
+    fn setup() -> Result<Day2> {
         let r = BufReader::new(TEST_INPUT.as_bytes());
         new(r)
     }
 
     #[test]
-    fn test_part_1() {
-        let r = setup();
-        assert_eq!(r.part_1(), Ok(2));
+    fn test_part_1() -> Result<()> {
+        let r = setup()?;
+        assert_eq!(r.part_1()?, 2);
+        Ok(())
     }
 
     #[test]
-    fn test_part_2() {
-        let r = setup();
-        assert_eq!(r.part_2(), Ok(14));
+    fn test_part_2() -> Result<()> {
+        let r = setup()?;
+        assert_eq!(r.part_2()?, 14);
+        Ok(())
     }
 }
