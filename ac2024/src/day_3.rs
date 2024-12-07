@@ -1,21 +1,39 @@
-use anyhow::{anyhow, Result};
-use std::io::{BufReader, Read};
+use anyhow::{anyhow, bail, Result};
+use regex::Regex;
+use std::io::{BufRead, BufReader, Read};
 
 use crate::Day;
 
-pub struct Day3 {}
+pub struct Day3 {
+    lines: Vec<String>,
+}
 
-pub fn new<R: Read>(_buf: BufReader<R>) -> Result<Day3> {
-    Ok(Day3 {})
+pub fn new<R: Read>(buf: BufReader<R>) -> Result<Day3> {
+    Ok(Day3 {
+        lines: buf.lines().map(|l| l.unwrap_or("".to_string())).collect(),
+    })
 }
 
 impl Day for Day3 {
     fn part_1(&self) -> Result<i64> {
-        Err(anyhow!("Unimplemented"))
+        // mul(A,B)
+        let re = Regex::new(r"mul\(([0-9]+),([0-9]+)\)")?;
+        self
+            .lines
+            .iter()
+            .map(|l| {
+                re.captures_iter(l)
+                    .map(|c| c.extract::<2>())
+                    .map(|(_, cs)| cs[0].parse::<i64>().unwrap() * cs[1].parse::<i64>().unwrap())
+                    .reduce(|s, v| s + v)
+            })
+            .map(|v| v.unwrap_or(0))
+            .reduce(|s, v| s + v)
+            .ok_or(anyhow!("failed to compute"))
     }
 
     fn part_2(&self) -> Result<i64> {
-        Err(anyhow!("Unimplemented"))
+        bail!("Unimplemented")
     }
 }
 
